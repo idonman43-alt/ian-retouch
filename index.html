@@ -268,5 +268,113 @@ $("save").addEventListener("click",()=>{
 setControlsEnabled(false);
 })();
 </script>
+  <script type="module">
+import { FaceLandmarker, FilesetResolver } from
+"https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.1/+esm";
+
+const aiButton = document.createElement("button");
+aiButton.textContent = "✨ AI 얼굴 인식";
+aiButton.style.cssText =
+"margin:12px 0;padding:14px 18px;border:0;border-radius:12px;background:#9b6cff;color:white;font-size:16px;font-weight:700;width:100%;";
+
+const status = document.createElement("div");
+status.textContent = "AI 얼굴 인식 준비 중...";
+status.style.cssText =
+"margin:8px 0;padding:10px;border-radius:10px;background:#222;color:#aaa;font-size:13px;";
+
+document.body.appendChild(aiButton);
+document.body.appendChild(status);
+
+let faceLandmarker = null;
+
+async function loadAI() {
+  if (faceLandmarker) return;
+
+  status.textContent = "AI 모델을 불러오는 중...";
+
+  const vision = await FilesetResolver.forVisionTasks(
+    "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.1.1/wasm"
+  );
+
+  faceLandmarker = await FaceLandmarker.createFromOptions(vision, {
+    baseOptions: {
+      modelAssetPath:
+        "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"
+    },
+    runningMode: "IMAGE",
+    numFaces: 5
+  });
+
+  status.textContent = "AI 얼굴 인식 준비 완료";
+}
+
+function getPhoto() {
+  const images = [...document.images];
+
+  return images.find(img =>
+    img.complete &&
+    img.naturalWidth > 100 &&
+    img.naturalHeight > 100
+  );
+}
+
+aiButton.onclick = async () => {
+  try {
+    aiButton.disabled = true;
+
+    await loadAI();
+
+    const img = getPhoto();
+
+    if (!img) {
+      status.textContent = "먼저 사진을 불러와 주세요.";
+      aiButton.disabled = false;
+      return;
+    }
+
+    const result = faceLandmarker.detect(img);
+
+    if (!result.faceLandmarks || result.faceLandmarks.length === 0) {
+      status.textContent = "얼굴을 찾지 못했어요.";
+      aiButton.disabled = false;
+      return;
+    }
+
+    document.querySelectorAll(".ai-face-point").forEach(e => e.remove());
+
+    const parent = img.parentElement;
+
+    if (getComputedStyle(parent).position === "static") {
+      parent.style.position = "relative";
+    }
+
+    result.faceLandmarks.forEach((face, faceIndex) => {
+      face.forEach((point, pointIndex) => {
+        const dot = document.createElement("span");
+
+        dot.className = "ai-face-point";
+        dot.style.cssText =
+          "position:absolute;width:4px;height:4px;background:#b56cff;border-radius:50%;pointer-events:none;z-index:9999;";
+
+        dot.style.left = (point.x * img.clientWidth - 2) + "px";
+        dot.style.top = (point.y * img.clientHeight - 2) + "px";
+
+        parent.appendChild(dot);
+      });
+    });
+
+    status.textContent =
+      "✨ 얼굴 " + result.faceLandmarks.length +
+      "개 인식 완료 · 얼굴 지점 분석 완료";
+
+  } catch (error) {
+    console.error(error);
+    status.textContent =
+      "AI 실행에 실패했어요. 인터넷 연결을 확인해 주세요.";
+  }
+
+  aiButton.disabled = false;
+};
+</script>
 </body>
 </html>
