@@ -1,0 +1,272 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#171914">
+<title>이든 리터치</title>
+<style>
+:root{color-scheme:dark;--bg:#171914;--panel:#22251f;--line:#3a3e34;--accent:#d9f59b;--text:#f5f5ee;--muted:#a8ad9e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Noto Sans KR",sans-serif}
+button,input{font:inherit}
+button{cursor:pointer}
+header{padding:22px 18px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#171914f2;backdrop-filter:blur(12px);z-index:5}
+.brand{font-size:24px;font-weight:850;letter-spacing:-1px}
+.brand span{color:var(--accent)}
+.sub{font-size:12px;color:var(--muted);margin-top:5px}
+main{max-width:760px;margin:auto;padding:16px 14px 38px}
+.section{background:var(--panel);border:1px solid var(--line);border-radius:17px;padding:15px;margin-bottom:14px}
+h2{font-size:16px;margin:0 0 13px}
+.preview{position:relative;background:#0b0c0a;border-radius:12px;overflow:hidden;min-height:230px;display:flex;align-items:center;justify-content:center}
+#photo{display:none;max-width:100%;width:100%;height:auto;max-height:62vh;object-fit:contain}
+.empty{text-align:center;padding:36px 18px;color:var(--muted);line-height:1.8}
+.empty strong{display:block;color:var(--text);font-size:16px}
+.pill{border:1px solid var(--line);border-radius:999px;padding:9px 13px;background:#2b2e26;color:var(--text);font-size:13px}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.primary{background:var(--accent);color:#1b2113;border:0;border-radius:11px;padding:12px 15px;font-weight:800}
+.secondary{background:#30332b;border:1px solid var(--line);color:var(--text);border-radius:11px;padding:11px 13px}
+button:disabled{opacity:.4;cursor:not-allowed}
+label.control{display:block;margin:18px 0}
+.labelrow{display:flex;justify-content:space-between;gap:8px;font-size:14px;margin-bottom:10px}
+.val{color:var(--accent);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--accent);height:26px}
+.preset-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.preset{padding:13px 9px;border:1px solid var(--line);border-radius:12px;background:#2b2e26;color:var(--text);text-align:left}
+.preset b{display:block;margin-bottom:4px}
+.preset small{color:var(--muted);font-size:11px}
+.preset.active{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.note{font-size:12px;color:var(--muted);line-height:1.7}
+.ai{border:1px solid #596448;background:#272d21;border-radius:12px;padding:13px;line-height:1.65;font-size:13px}
+.ai b{color:var(--accent)}
+.status{font-size:12px;color:var(--muted);margin-top:10px;min-height:18px;overflow-wrap:anywhere}
+footer{text-align:center;color:var(--muted);font-size:11px;padding:10px}
+#compare{display:none;position:absolute;inset:0;background:#0b0c0a;align-items:center;justify-content:center}
+#compare img{max-width:100%;max-height:62vh;object-fit:contain}
+#compare span{position:absolute;top:10px;left:10px;background:#000b;padding:6px 9px;border-radius:7px;font-size:12px}
+@media(min-width:600px){.preset-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.preview{min-height:300px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">이든 <span>리터치</span></div>
+  <div class="sub">개인용 인물 사진 편집실 · 1차 시제품</div>
+</header>
+
+<main>
+  <section class="section">
+    <h2>01 · 사진 작업</h2>
+    <div class="preview" id="preview">
+      <div class="empty" id="empty">
+        <strong>나만의 사진 보정실</strong>
+        갤러리에서 사진을 불러와 시작해 봐.<br>
+        사진은 이 브라우저 안에서 처리돼.
+      </div>
+      <img id="photo" alt="보정 중인 사진">
+      <div id="compare"><img id="originalCompare" alt="원본 사진"><span>원본 사진</span></div>
+    </div>
+    <input id="fileInput" type="file" accept="image/*" hidden>
+    <div class="toolbar">
+      <button class="primary" id="pick">사진 불러오기</button>
+      <button class="secondary" id="compareBtn" disabled>원본 비교</button>
+      <button class="secondary" id="reset" disabled>초기화</button>
+    </div>
+    <div class="status" id="status">사진을 선택하면 보정 도구가 활성화돼.</div>
+  </section>
+
+  <section class="section">
+    <h2>02 · 필름 색감 프리셋</h2>
+    <div class="preset-grid">
+      <button class="preset active" data-preset="original"><b>기본</b><small>중립적인 색감</small></button>
+      <button class="preset" data-preset="film"><b>필름 감성</b><small>따뜻하고 부드럽게</small></button>
+      <button class="preset" data-preset="cinema"><b>시네마틱</b><small>차분하고 깊은 대비</small></button>
+      <button class="preset" data-preset="soft"><b>소프트</b><small>낮은 대비와 은은함</small></button>
+      <button class="preset" data-preset="warm"><b>웜 톤</b><small>따뜻한 햇살 느낌</small></button>
+      <button class="preset" data-preset="cool"><b>쿨 톤</b><small>시원하고 담백하게</small></button>
+      <button class="preset" data-preset="mono"><b>흑백</b><small>모노크롬 표현</small></button>
+      <button class="preset" data-preset="reset"><b>보정 초기화</b><small>모든 조절값 되돌리기</small></button>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>03 · 세밀한 색감 조절</h2>
+    <div id="controls">
+      <label class="control">
+        <div class="labelrow"><span>밝기</span><span class="val" id="brightnessVal">0</span></div>
+        <input type="range" id="brightness" min="-50" max="50" value="0">
+      </label>
+      <label class="control">
+        <div class="labelrow"><span>대비</span><span class="val" id="contrastVal">0</span></div>
+        <input type="range" id="contrast" min="-50" max="50" value="0">
+      </label>
+      <label class="control">
+        <div class="labelrow"><span>채도</span><span class="val" id="saturationVal">0</span></div>
+        <input type="range" id="saturation" min="-100" max="100" value="0">
+      </label>
+      <label class="control">
+        <div class="labelrow"><span>색온도</span><span class="val" id="temperatureVal">0</span></div>
+        <input type="range" id="temperature" min="-40" max="40" value="0">
+      </label>
+    </div>
+    <div class="toolbar">
+      <button class="secondary" id="resetSliders">조절값 초기화</button>
+      <button class="primary" id="save" disabled>보정 사진 JPG 저장</button>
+    </div>
+    <p class="note">미리보기는 화면 표시용으로 크기가 줄어들 수 있어. JPG 저장은 현재 브라우저에서 처리한 이미지로 만들어져.</p>
+  </section>
+
+  <section class="section">
+    <h2>04 · AI 인물 보정 개발</h2>
+    <div class="ai">
+      <b>AI 기능 개발 예정</b><br>
+      피부 잡티 제거, 피부결 보존, 다크서클 완화, 얼굴형·눈·치아 보정은 아직 연결되지 않았어. 이 버튼이나 프리셋이 AI 보정을 수행하는 것은 아니야. 이후 실제 모델을 검토해 기능별로 구현할 거야.
+    </div>
+  </section>
+  <footer>이든 리터치 · 사진은 자동 업로드되지 않음 · 1차 시제품</footer>
+</main>
+
+<script>
+(function(){
+"use strict";
+const $=id=>document.getElementById(id);
+const ids=["brightness","contrast","saturation","temperature"];
+const defaults={brightness:0,contrast:0,saturation:0,temperature:0};
+const presets={
+ original:{brightness:0,contrast:0,saturation:0,temperature:0},
+ film:{brightness:5,contrast:-9,saturation:-12,temperature:12},
+ cinema:{brightness:-4,contrast:20,saturation:-18,temperature:-7},
+ soft:{brightness:8,contrast:-18,saturation:-8,temperature:4},
+ warm:{brightness:5,contrast:2,saturation:7,temperature:22},
+ cool:{brightness:0,contrast:8,saturation:-6,temperature:-22},
+ mono:{brightness:0,contrast:12,saturation:-100,temperature:0},
+ reset:defaults
+};
+let originalURL=null,originalImage=null,loaded=false,compareOn=false;
+let renderTimer=null;
+
+function values(){
+ const v={};
+ ids.forEach(id=>v[id]=Number($(id).value));
+ return v;
+}
+function updateLabels(){
+ ids.forEach(id=>$(id+"Val").textContent=(Number($(id).value)>0?"+":"")+$(id).value);
+}
+function filterString(v){
+ const bright=100+v.brightness*1.2;
+ const contrast=100+v.contrast*1.2;
+ const sat=Math.max(0,100+v.saturation);
+ const warmth=v.temperature;
+ const sep= Math.max(0,Math.abs(warmth)/40*0.12);
+ const warmFilter=warmth>0
+  ? "sepia("+sep+")"
+  : "hue-rotate("+(-warmth*0.35)+"deg)";
+ return "brightness("+bright+"%) contrast("+contrast+"%) saturate("+sat+"%) "+warmFilter;
+}
+function render(){
+ updateLabels();
+ if(!loaded||compareOn)return;
+ $("photo").style.filter=filterString(values());
+}
+function queueRender(){
+ clearTimeout(renderTimer);
+ renderTimer=setTimeout(render,25);
+}
+function setStatus(msg){$("status").textContent=msg;}
+function setControlsEnabled(enabled){
+ [...document.querySelectorAll("#controls input"),$("save"),$("compareBtn"),$("reset"),$("resetSliders")].forEach(el=>el.disabled=!enabled);
+ document.querySelectorAll(".preset").forEach(el=>el.disabled=!enabled);
+}
+function resetValues(){
+ ids.forEach(id=>$(id).value=defaults[id]);
+ document.querySelectorAll(".preset").forEach(el=>el.classList.toggle("active",el.dataset.preset==="original"));
+ render();
+}
+$("pick").addEventListener("click",()=>$("fileInput").click());
+$("fileInput").addEventListener("change",e=>{
+ const file=e.target.files&&e.target.files[0];
+ if(!file)return;
+ if(!file.type.startsWith("image/")){setStatus("이미지 파일을 선택해 줘.");return;}
+ if(originalURL)URL.revokeObjectURL(originalURL);
+ originalURL=URL.createObjectURL(file);
+ originalImage=new Image();
+ originalImage.onload=()=>{
+   loaded=true;
+   $("photo").src=originalURL;
+   $("photo").style.display="block";
+   $("empty").style.display="none";
+   $("originalCompare").src=originalURL;
+   $("originalCompare").style.filter="none";
+   $("compare").style.display="none";
+   compareOn=false;
+   setControlsEnabled(true);
+   resetValues();
+   setStatus("사진을 불러왔어. 조절값을 움직여 보정해 봐.");
+ };
+ originalImage.onerror=()=>setStatus("사진을 열 수 없어. 다른 이미지 파일로 시도해 줘.");
+ originalImage.src=originalURL;
+ e.target.value="";
+});
+ids.forEach(id=>$(id).addEventListener("input",()=>{
+ document.querySelectorAll(".preset").forEach(el=>el.classList.remove("active"));
+ queueRender();
+}));
+document.querySelectorAll(".preset").forEach(btn=>btn.addEventListener("click",()=>{
+ if(!loaded)return;
+ const key=btn.dataset.preset;
+ const p=presets[key]||defaults;
+ ids.forEach(id=>$(id).value=p[id]??0);
+ document.querySelectorAll(".preset").forEach(el=>el.classList.toggle("active",el===btn));
+ render();
+}));
+$("resetSliders").addEventListener("click",()=>{
+ if(!loaded)return;
+ resetValues();
+});
+$("reset").addEventListener("click",()=>{
+ if(!loaded)return;
+ resetValues();
+ setStatus("모든 조절값을 초기화했어.");
+});
+$("compareBtn").addEventListener("click",()=>{
+ if(!loaded)return;
+ compareOn=!compareOn;
+ $("compare").style.display=compareOn?"flex":"none";
+ $("photo").style.visibility=compareOn?"hidden":"visible";
+ $("compareBtn").textContent=compareOn?"보정 결과 보기":"원본 비교";
+ if(!compareOn)render();
+});
+$("save").addEventListener("click",()=>{
+ if(!loaded||!originalImage)return;
+ const img=originalImage;
+ const v=values();
+ const maxSide=img.width>6000||img.height>6000?6000:Math.max(img.width,img.height);
+ const scale=Math.min(1,maxSide/Math.max(img.width,img.height));
+ const canvas=document.createElement("canvas");
+ canvas.width=Math.max(1,Math.round(img.width*scale));
+ canvas.height=Math.max(1,Math.round(img.height*scale));
+ const ctx=canvas.getContext("2d");
+ if(!ctx){setStatus("이미지 처리 기능을 사용할 수 없어.");return;}
+ ctx.filter=filterString(v);
+ ctx.drawImage(img,0,0,canvas.width,canvas.height);
+ ctx.filter="none";
+ setStatus("JPG 파일을 만드는 중이야…");
+ canvas.toBlob(blob=>{
+   if(!blob){setStatus("저장에 실패했어. 이미지 크기를 줄여 다시 시도해 줘.");return;}
+   const url=URL.createObjectURL(blob);
+   const a=document.createElement("a");
+   a.href=url;
+   a.download="eden-retouch-"+new Date().toISOString().slice(0,10)+".jpg";
+   document.body.appendChild(a);
+   a.click();
+   a.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),30000);
+   setStatus("JPG 저장을 요청했어. 다운로드 알림이나 내 파일을 확인해 줘.");
+ }, "image/jpeg",0.94);
+});
+setControlsEnabled(false);
+})();
+</script>
+</body>
+</html>
